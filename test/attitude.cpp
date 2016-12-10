@@ -179,7 +179,7 @@ int main()
     Quatf q_from_m(m4);
     TEST(isEqual(q_from_m, m4));
 
-    // quaternion derivate
+    // quaternion derivative
     Quatf q1(0, 1, 0, 0);
     Vector<float, 4> q1_dot = q1.derivative(Vector3f(1, 2, 3));
     float data_q_dot_check[] = { -0.5f, 0.0f, 1.5f, -1.0f};
