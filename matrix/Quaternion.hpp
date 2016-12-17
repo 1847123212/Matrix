@@ -280,9 +280,11 @@ public:
     void invert()
     {
         Quaternion &q = *this;
-        q(1) *= -1;
-        q(2) *= -1;
-        q(3) *= -1;
+        Type n = q.dot(q);
+        q(0) = q(0)/n;
+        q(1) = -q(1)/n;
+        q(2) = -q(2)/n;
+        q(3) = -q(3)/n;
     }
 
     /**
@@ -294,10 +296,11 @@ public:
     {
         Quaternion &q = *this;
         Quaternion ret;
-        ret(0) = q(0);
-        ret(1) = -q(1);
-        ret(2) = -q(2);
-        ret(3) = -q(3);
+        Type n = q.dot(q);
+        ret(0) = q(0)/n;
+        ret(1) = -q(1)/n;
+        ret(2) = -q(2)/n;
+        ret(3) = -q(3)/n;
         return ret;
     }
 
