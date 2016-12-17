@@ -263,11 +263,29 @@ public:
     }
 
     /**
-     * Computes the derivative
+     * Computes the derivative of q_12 when
+     * rotated with angular velocity expressed in frame 2
+     * v_2 = q_12 * v_1 * q_12^-1
+     * d/dt q_12 = 0.5 * q_12 * omega_12_2
      *
-     * @param w direction
+     * @param w angular rate in frame 2
      */
-    Matrix41 derivative(const Matrix31 &w) const
+    Matrix41 derivative1(const Matrix31 &w) const
+    {
+        const Quaternion &q = *this;
+        Quaternion<Type> v(0, w(0, 0), w(1, 0), w(2, 0));
+        return q * v  * Type(0.5);
+    }
+
+    /**
+     * Computes the derivative of q_12 when
+     * rotated with angular velocity expressed in frame 2
+     * v_2 = q_12 * v_1 * q_12^-1
+     * d/dt q_12 = 0.5 * omega_12_1 * q_12
+     *
+     * @param w angular rate in frame (typically reference frame)
+     */
+    Matrix41 derivative2(const Matrix31 &w) const
     {
         const Quaternion &q = *this;
         Quaternion<Type> v(0, w(0, 0), w(1, 0), w(2, 0));

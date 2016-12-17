@@ -179,12 +179,18 @@ int main()
     Quatf q_from_m(m4);
     TEST(isEqual(q_from_m, m4));
 
-    // quaternion derivative
+    // quaternion derivative in frame 1
     Quatf q1(0, 1, 0, 0);
-    Vector<float, 4> q1_dot = q1.derivative(Vector3f(1, 2, 3));
-    float data_q_dot_check[] = { -0.5f, 0.0f, 1.5f, -1.0f};
-    Vector<float, 4> q1_dot_check(data_q_dot_check);
-    TEST(isEqual(q1_dot, q1_dot_check));
+    Vector<float, 4> q1_dot1 = q1.derivative1(Vector3f(1, 2, 3));
+    float data_q_dot1_check[] = { -0.5f, 0.0f, -1.5f, 1.0f};
+    Vector<float, 4> q1_dot1_check(data_q_dot1_check);
+    TEST(isEqual(q1_dot1, q1_dot1_check));
+
+    // quaternion derivative in frame 2
+    Vector<float, 4> q1_dot2 = q1.derivative2(Vector3f(1, 2, 3));
+    float data_q_dot2_check[] = { -0.5f, 0.0f, 1.5f, -1.0f};
+    Vector<float, 4> q1_dot2_check(data_q_dot2_check);
+    TEST(isEqual(q1_dot2, q1_dot2_check));
 
     // quaternion product
     Quatf q_prod_check(
