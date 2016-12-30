@@ -226,6 +226,54 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
     return X;
 }
 
+/**
+ * cholesky decomposition
+ */
+template<typename Type, size_t M>
+SquareMatrix <Type, M> cholesky(const SquareMatrix<Type, M> & A)
+{
+    SquareMatrix<Type, M> L;
+    for (int j = 0; j < M; j++) {
+        for (int i = j; i < M; i++) {
+            if (i==j) {
+                float sum = 0;
+                for (int k = 0; k < j; k++) {
+                    sum += L(j, k)*L(j, k);
+                }
+                Type res = A(j, j) - sum;
+                if (res <= 0) {
+                    L(j, j) = 0;
+                } else {
+                    L(j, j) = sqrtf(res);
+                }
+            } else {
+                float sum = 0;
+                for (int k = 0; k < j; k++) {
+                    sum += L(i, k)*L(j, k);
+                }
+                if (L(j, j) <= 0) {
+                    L(i, j) = 0;
+                } else {
+                    L(i, j) = (A(i, j) - sum)/L(j, j);
+                }
+            }
+        }
+    }
+    return L;
+}
+
+/**
+ * cholesky inverse
+ */
+template<typename Type, size_t M>
+SquareMatrix <Type, M> choleskyInv(const SquareMatrix<Type, M> & A)
+{
+    SquareMatrix<Type, M> L_inv = inv(cholesky(A));
+    return L_inv.T()*L_inv;
+}
+
+
+
 typedef SquareMatrix<float, 3> Matrix3f;
 
 } // namespace matrix
