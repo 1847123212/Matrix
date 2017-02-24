@@ -15,6 +15,7 @@
 #include <math.h>
 
 #include "math.hpp"
+#include "helper_functions.hpp"
 
 namespace matrix
 {
@@ -47,8 +48,22 @@ public:
     // inverse alias
     inline SquareMatrix<Type, M> I() const
     {
-        return inv(*this);
+        SquareMatrix<Type, M> i;
+        if(inv(*this, i)) {
+            return i;
+        } else {
+            i.setZero();
+            return i;
+        }
     }
+
+
+    // inverse alias
+    inline bool I(SquareMatrix<Type, M> &i) const
+    {
+        return inv(*this, i);
+    }
+
 
     Vector<Type, M> diag() const
     {
@@ -108,11 +123,12 @@ SquareMatrix<Type, M> expm(const Matrix<Type, M, M> & A, size_t order=5)
     return res;
 }
 
+
 /**
  * inverse based on LU factorization with partial pivotting
  */
 template<typename Type, size_t M>
-SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
+bool inv(const SquareMatrix<Type, M> & A, SquareMatrix<Type, M> & inv)
 {
     SquareMatrix<Type, M> L;
     L.setIdentity();
@@ -126,12 +142,12 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
     for (size_t n = 0; n < M; n++) {
 
         // if diagonal is zero, swap with row below
-        if (fabsf(U(n, n)) < 1e-8f) {
+        if (fabsf(static_cast<float>(U(n, n))) < 1e-8f) {
             //printf("trying pivot for row %d\n",n);
             for (size_t i = n + 1; i < M; i++) {
 
                 //printf("\ttrying row %d\n",i);
-                if (fabsf(U(i, n)) > 1e-8f) {
+                if (fabsf(static_cast<float>(U(i, n))) > 1e-8f) {
                     //printf("swapped %d\n",i);
                     U.swapRows(i, n);
                     P.swapRows(i, n);
@@ -147,14 +163,12 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
         //printf("U:\n"); U.print();
         //printf("P:\n"); P.print();
         //fflush(stdout);
-        ASSERT(fabsf(U(n, n)) > 1e-8f);
+        //ASSERT(fabsf(U(n, n)) > 1e-8f);
 #endif
 
         // failsafe, return zero matrix
-        if (fabsf(U(n, n)) < 1e-8f) {
-            SquareMatrix<Type, M> zero;
-            zero.setZero();
-            return zero;
+        if (fabsf(static_cast<float>(U(n, n))) < 1e-8f) {
+            return false;
         }
 
         // for all rows below diagonal
@@ -173,7 +187,7 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
     //printf("U:\n"); U.print();
 
     // solve LY=P*I for Y by forward subst
-    SquareMatrix<Type, M> Y = P;
+    //SquareMatrix<Type, M> Y = P;
 
     // for all columns of Y
     for (size_t c = 0; c < M; c++) {
@@ -184,7 +198,7 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
                 // for all existing y
                 // subtract the component they
                 // contribute to the solution
-                Y(i, c) -= L(i, j) * Y(j, c);
+                P(i, c) -= L(i, j) * P(j, c);
             }
 
             // divide by the factor
@@ -198,7 +212,7 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
     //printf("Y:\n"); Y.print();
 
     // solve Ux=y for x by back subst
-    SquareMatrix<Type, M> X = Y;
+    //SquareMatrix<Type, M> X = Y;
 
     // for all columns of X
     for (size_t c = 0; c < M; c++) {
@@ -212,18 +226,95 @@ SquareMatrix <Type, M> inv(const SquareMatrix<Type, M> & A)
                 // for all existing x
                 // subtract the component they
                 // contribute to the solution
-                X(i, c) -= U(i, j) * X(j, c);
+                P(i, c) -= U(i, j) * P(j, c);
             }
 
             // divide by the factor
             // on current
             // term to be solved
-            X(i, c) /= U(i, i);
+            //
+            // we know that U(i, i) != 0 from above
+            P(i, c) /= U(i, i);
         }
     }
 
+    //check sanity of results
+    for (size_t i = 0; i < M; i++) {
+        for (size_t j = 0; j < M; j++) {
+            if (!is_finite(P(i,j))) {
+                return false;
+            }
+        }
+    }
     //printf("X:\n"); X.print();
-    return X;
+    inv = P;
+    return true;
+}
+
+/**
+ * inverse based on LU factorization with partial pivotting
+ */
+template<typename Type, size_t M>
+SquareMatrix<Type, M> inv(const SquareMatrix<Type, M> & A)
+{
+    SquareMatrix<Type, M> i;
+    if(inv(A, i)) {
+        return i;
+    } else {
+        i.setZero();
+        return i;
+    }
+}
+
+/**
+ * cholesky decomposition
+ *
+ * Note: A must be positive definite
+ */
+template<typename Type, size_t M>
+SquareMatrix <Type, M> cholesky(const SquareMatrix<Type, M> & A)
+{
+    SquareMatrix<Type, M> L;
+    for (size_t j = 0; j < M; j++) {
+        for (size_t i = j; i < M; i++) {
+            if (i==j) {
+                float sum = 0;
+                for (size_t k = 0; k < j; k++) {
+                    sum += L(j, k)*L(j, k);
+                }
+                Type res = A(j, j) - sum;
+                if (res <= 0) {
+                    L(j, j) = 0;
+                } else {
+                    L(j, j) = sqrtf(res);
+                }
+            } else {
+                float sum = 0;
+                for (size_t k = 0; k < j; k++) {
+                    sum += L(i, k)*L(j, k);
+                }
+                if (L(j, j) <= 0) {
+                    L(i, j) = 0;
+                } else {
+                    L(i, j) = (A(i, j) - sum)/L(j, j);
+                }
+            }
+        }
+    }
+    return L;
+}
+
+/**
+ * cholesky inverse
+ *
+ * TODO: Check if gaussian elimination jumps straight to back-substitution
+ * for L or we need to do it manually. Will impact speed otherwise.
+ */
+template<typename Type, size_t M>
+SquareMatrix <Type, M> choleskyInv(const SquareMatrix<Type, M> & A)
+{
+    SquareMatrix<Type, M> L_inv = inv(cholesky(A));
+    return L_inv.T()*L_inv;
 }
 
 typedef SquareMatrix<float, 3> Matrix3f;
